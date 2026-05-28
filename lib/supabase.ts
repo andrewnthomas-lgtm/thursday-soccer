@@ -14,6 +14,7 @@ export type Player = {
   notes: string
   active: boolean
   created_at: string
+  conflicts?: string[]
 }
 
 export type Session = {
@@ -55,16 +56,34 @@ export function initials(name: string) {
   return name.split(' ').map((x: string) => x[0]).join('').toUpperCase().slice(0, 2)
 }
 
+export function hasConflict(teams: Player[][], allPlayers: Player[]): boolean {
+  for (const team of teams) {
+    const teamIds = team.map(p => p.id)
+    for (const player of team) {
+      const fullPlayer = allPlayers.find(p => p.id === player.id)
+      if (!fullPlayer?.conflicts) continue
+      for (const conflictId of fullPlayer.conflicts) {
+        if (teamIds.includes(conflictId)) return true
+      }
+    }
+  }
+  return false
+}
+
 export function balanceTeams(pool: Player[], numTeams: number): Player[][] {
   let best: Player[][] | null = null
   let bestScore = Infinity
 
-  for (let iter = 0; iter < 800; iter++) {
+  for (let iter = 0; iter < 1200; iter++) {
     const shuffled = [...pool].sort(() => Math.random() - 0.5)
     const teams: Player[][] = Array.from({ length: numTeams }, () => [])
     const sorted = [...shuffled].sort((a, b) => b.skill - a.skill)
     sorted.forEach((p, i) => teams[i % numTeams].push(p))
-    const score = scoreTeams(teams)
+
+    // Heavy penalty for conflict violations
+    const conflictPenalty = hasConflict(teams, pool) ? 1000 : 0
+    const score = scoreTeams(teams) + conflictPenalty
+
     if (score < bestScore) {
       bestScore = score
       best = teams.map(t => [...t])
