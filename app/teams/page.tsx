@@ -91,8 +91,7 @@ export default function TeamsPage() {
         {teams.map((team, ti) => {
           const avgSkill = (team.players.reduce((s, p) => s + p.skill, 0) / team.players.length).toFixed(1)
           const avgAge = Math.round(team.players.reduce((s, p) => s + p.age, 0) / team.players.length)
-          const nats = [...new Set(team.players.map(p => p.nationality))]
-
+const nats = Array.from(new Set(team.players.map(p => p.nationality)))
           return (
             <div
               key={ti}
