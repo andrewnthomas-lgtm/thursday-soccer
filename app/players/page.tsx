@@ -134,7 +134,7 @@ export default function PlayersPage() {
                 <input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="e.g. goalkeeper" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
               </div>
             </div>
-            <div className="flex gap-3 mt-5">
+            <div className="flex gap-3 mt-5 mb-8">
               <button onClick={() => setShowModal(false)} className="flex-1 border border-gray-200 text-gray-600 font-medium py-3 rounded-xl btn-touch">Cancel</button>
               <button onClick={savePlayer} className="flex-1 bg-green-500 text-white font-medium py-3 rounded-xl btn-touch">Save</button>
             </div>
