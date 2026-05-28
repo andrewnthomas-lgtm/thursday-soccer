@@ -12,6 +12,8 @@ export default function PlayersPage() {
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<Player | null>(null)
   const [form, setForm] = useState({ name: '', age: '', nationality: '', skill: '3', notes: '' })
+  const [selectedConflicts, setSelectedConflicts] = useState<string[]>([])
+  const [showConflictPicker, setShowConflictPicker] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -31,7 +33,14 @@ export default function PlayersPage() {
   async function savePlayer() {
     if (!form.name || !form.age || !form.nationality) return alert('Please fill in name, age, and nationality')
     const supabase = createClient()
-    const payload = { name: form.name, age: parseInt(form.age), nationality: form.nationality, skill: parseInt(form.skill), notes: form.notes }
+    const payload = {
+      name: form.name,
+      age: parseInt(form.age),
+      nationality: form.nationality,
+      skill: parseInt(form.skill),
+      notes: form.notes,
+      conflicts: selectedConflicts
+    }
     if (editing) {
       await supabase.from('players').update(payload).eq('id', editing.id)
     } else {
@@ -40,6 +49,7 @@ export default function PlayersPage() {
     setShowModal(false)
     setEditing(null)
     setForm({ name: '', age: '', nationality: '', skill: '3', notes: '' })
+    setSelectedConflicts([])
     fetchPlayers()
   }
 
@@ -53,19 +63,29 @@ export default function PlayersPage() {
   function openEdit(p: Player) {
     setEditing(p)
     setForm({ name: p.name, age: String(p.age), nationality: p.nationality, skill: String(p.skill), notes: p.notes })
+    setSelectedConflicts(p.conflicts || [])
     setShowModal(true)
   }
 
   function openAdd() {
     setEditing(null)
     setForm({ name: '', age: '', nationality: '', skill: '3', notes: '' })
+    setSelectedConflicts([])
     setShowModal(true)
+  }
+
+  function toggleConflict(id: string) {
+    setSelectedConflicts(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
   }
 
   const filtered = players.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.nationality.toLowerCase().includes(search.toLowerCase())
   )
+
+  const conflictPlayers = players.filter(p => editing ? p.id !== editing.id : true)
 
   return (
     <div className="max-w-lg mx-auto pb-24">
@@ -94,6 +114,11 @@ export default function PlayersPage() {
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-900 text-sm truncate">{p.name}</p>
               <p className="text-xs text-gray-400">{getFlag(p.nationality)} {p.nationality} · Age {p.age}{p.notes ? ` · ${p.notes}` : ''}</p>
+              {p.conflicts && p.conflicts.length > 0 && (
+                <p className="text-xs text-red-400 mt-0.5">
+                  ⚡ Can't play with: {p.conflicts.map(id => players.find(x => x.id === id)?.name?.split(' ')[0]).filter(Boolean).join(', ')}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ backgroundColor: skillColor(p.skill) + '22', color: skillColor(p.skill) }}>S{p.skill}</span>
@@ -106,7 +131,7 @@ export default function PlayersPage() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h2 className="font-bold text-gray-900 mb-4">{editing ? 'Edit player' : 'Add player'}</h2>
             <div className="space-y-3">
               <div>
@@ -133,7 +158,36 @@ export default function PlayersPage() {
                 <label className="text-xs text-gray-500 font-medium block mb-1">Notes (optional)</label>
                 <input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="e.g. goalkeeper" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
               </div>
+
+              <div>
+                <label className="text-xs text-gray-500 font-medium block mb-1">⚡ Can't play with</label>
+                <button
+                  onClick={() => setShowConflictPicker(!showConflictPicker)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-left text-gray-500 focus:outline-none"
+                >
+                  {selectedConflicts.length === 0
+                    ? 'Tap to select players...'
+                    : selectedConflicts.map(id => players.find(x => x.id === id)?.name?.split(' ')[0]).filter(Boolean).join(', ')}
+                </button>
+                {showConflictPicker && (
+                  <div className="mt-2 border border-gray-200 rounded-xl overflow-hidden">
+                    {conflictPlayers.map(p => (
+                      <div
+                        key={p.id}
+                        onClick={() => toggleConflict(p.id)}
+                        className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer border-b border-gray-50 last:border-0 ${selectedConflicts.includes(p.id) ? 'bg-red-50' : ''}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedConflicts.includes(p.id) ? 'bg-red-400 border-red-400' : 'border-gray-300'}`}>
+                          {selectedConflicts.includes(p.id) && <span className="text-white text-xs">✕</span>}
+                        </div>
+                        <span className="text-sm text-gray-700">{p.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+
             <div className="flex gap-3 mt-5 mb-16">
               <button onClick={() => setShowModal(false)} className="flex-1 border border-gray-200 text-gray-600 font-medium py-3 rounded-xl btn-touch">Cancel</button>
               <button onClick={savePlayer} className="flex-1 bg-green-500 text-white font-medium py-3 rounded-xl btn-touch">Save</button>
