@@ -214,7 +214,7 @@ export default function WeeklyPage() {
                 </div>
               </div>
             </div>
-            <div className="flex gap-3 mt-5">
+            <div className="flex gap-3 mt-5 mb-16">
               <button onClick={() => setShowGuestModal(false)} className="flex-1 border border-gray-200 text-gray-600 font-medium py-3 rounded-xl btn-touch">Cancel</button>
               <button onClick={addGuest} className="flex-1 bg-blue-500 text-white font-medium py-3 rounded-xl btn-touch">Add guest</button>
             </div>
