@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient, Player, getFlag, skillColor, initials } from '@/lib/supabase'
+import { createClient, Player, getFlag, skillColor, fitnessColor, initials } from '@/lib/supabase'
 import Nav from '@/components/Nav'
 
 export default function PlayersPage() {
@@ -11,7 +11,7 @@ export default function PlayersPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<Player | null>(null)
-  const [form, setForm] = useState({ name: '', age: '', nationality: '', skill: '3', notes: '' })
+  const [form, setForm] = useState({ name: '', age: '', nationality: '', skill: '3', fitness: '3', notes: '' })
   const [selectedConflicts, setSelectedConflicts] = useState<string[]>([])
   const [showConflictPicker, setShowConflictPicker] = useState(false)
 
@@ -38,6 +38,7 @@ export default function PlayersPage() {
       age: parseInt(form.age),
       nationality: form.nationality,
       skill: parseInt(form.skill),
+      fitness: parseInt(form.fitness),
       notes: form.notes,
       conflicts: selectedConflicts
     }
@@ -48,7 +49,7 @@ export default function PlayersPage() {
     }
     setShowModal(false)
     setEditing(null)
-    setForm({ name: '', age: '', nationality: '', skill: '3', notes: '' })
+    setForm({ name: '', age: '', nationality: '', skill: '3', fitness: '3', notes: '' })
     setSelectedConflicts([])
     fetchPlayers()
   }
@@ -62,14 +63,14 @@ export default function PlayersPage() {
 
   function openEdit(p: Player) {
     setEditing(p)
-    setForm({ name: p.name, age: String(p.age), nationality: p.nationality, skill: String(p.skill), notes: p.notes })
+    setForm({ name: p.name, age: String(p.age), nationality: p.nationality, skill: String(p.skill), fitness: String(p.fitness || 3), notes: p.notes })
     setSelectedConflicts(p.conflicts || [])
     setShowModal(true)
   }
 
   function openAdd() {
     setEditing(null)
-    setForm({ name: '', age: '', nationality: '', skill: '3', notes: '' })
+    setForm({ name: '', age: '', nationality: '', skill: '3', fitness: '3', notes: '' })
     setSelectedConflicts([])
     setShowModal(true)
   }
@@ -114,6 +115,10 @@ export default function PlayersPage() {
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-900 text-sm truncate">{p.name}</p>
               <p className="text-xs text-gray-400">{getFlag(p.nationality)} {p.nationality} · Age {p.age}{p.notes ? ` · ${p.notes}` : ''}</p>
+              <div className="flex gap-2 mt-0.5">
+                <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: skillColor(p.skill) + '22', color: skillColor(p.skill) }}>⚽ S{p.skill}</span>
+                <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: fitnessColor(p.fitness || 3) + '22', color: fitnessColor(p.fitness || 3) }}>🏃 F{p.fitness || 3}</span>
+              </div>
               {p.conflicts && p.conflicts.length > 0 && (
                 <p className="text-xs text-red-400 mt-0.5">
                   ⚡ Can't play with: {p.conflicts.map(id => players.find(x => x.id === id)?.name?.split(' ')[0]).filter(Boolean).join(', ')}
@@ -121,7 +126,6 @@ export default function PlayersPage() {
               )}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ backgroundColor: skillColor(p.skill) + '22', color: skillColor(p.skill) }}>S{p.skill}</span>
               <button onClick={() => openEdit(p)} className="text-gray-400 hover:text-gray-600 p-1">✏️</button>
               <button onClick={() => deletePlayer(p.id)} className="text-gray-400 hover:text-red-500 p-1">🗑️</button>
             </div>
@@ -144,21 +148,28 @@ export default function PlayersPage() {
                   <input type="number" value={form.age} onChange={e => setForm({...form, age: e.target.value})} placeholder="28" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 font-medium block mb-1">Skill (1–5)</label>
+                  <label className="text-xs text-gray-500 font-medium block mb-1">Nationality</label>
+                  <input value={form.nationality} onChange={e => setForm({...form, nationality: e.target.value})} placeholder="e.g. Brazil" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500 font-medium block mb-1">⚽ Skill (1–5)</label>
                   <select value={form.skill} onChange={e => setForm({...form, skill: e.target.value})} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
+                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 font-medium block mb-1">🏃 Fitness (1–5)</label>
+                  <select value={form.fitness} onChange={e => setForm({...form, fitness: e.target.value})} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
                     {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-500 font-medium block mb-1">Nationality</label>
-                <input value={form.nationality} onChange={e => setForm({...form, nationality: e.target.value})} placeholder="e.g. Brazil" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
-              </div>
-              <div>
                 <label className="text-xs text-gray-500 font-medium block mb-1">Notes (optional)</label>
                 <input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="e.g. goalkeeper" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
               </div>
-
               <div>
                 <label className="text-xs text-gray-500 font-medium block mb-1">⚡ Can't play with</label>
                 <button
@@ -187,7 +198,6 @@ export default function PlayersPage() {
                 )}
               </div>
             </div>
-
             <div className="flex gap-3 mt-5 mb-16">
               <button onClick={() => setShowModal(false)} className="flex-1 border border-gray-200 text-gray-600 font-medium py-3 rounded-xl btn-touch">Cancel</button>
               <button onClick={savePlayer} className="flex-1 bg-green-500 text-white font-medium py-3 rounded-xl btn-touch">Save</button>
@@ -195,7 +205,6 @@ export default function PlayersPage() {
           </div>
         </div>
       )}
-
       <Nav />
     </div>
   )
