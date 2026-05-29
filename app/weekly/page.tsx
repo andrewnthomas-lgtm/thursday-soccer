@@ -56,7 +56,7 @@ export default function WeeklyPage() {
       isGuest: true
     }
     setGuests(prev => [...prev, guest])
-    setSelected(prev => new Set([...prev, guest.id]))
+    setSelected(prev => new Set(Array.from(prev).concat(guest.id)))
     setGuestForm({ name: '', skill: '3', fitness: '3' })
     setShowGuestModal(false)
   }
