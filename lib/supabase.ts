@@ -11,10 +11,12 @@ export type Player = {
   age: number
   nationality: string
   skill: number
+  fitness: number
   notes: string
   active: boolean
   created_at: string
   conflicts?: string[]
+  isGuest?: boolean
 }
 
 export type Session = {
@@ -52,6 +54,10 @@ export function skillColor(skill: number) {
   return ['', '#ef4444', '#f97316', '#94a3b8', '#22c55e', '#3b82f6'][skill]
 }
 
+export function fitnessColor(fitness: number) {
+  return ['', '#ef4444', '#f97316', '#94a3b8', '#22c55e', '#3b82f6'][fitness]
+}
+
 export function initials(name: string) {
   return name.split(' ').map((x: string) => x[0]).join('').toUpperCase().slice(0, 2)
 }
@@ -77,10 +83,9 @@ export function balanceTeams(pool: Player[], numTeams: number): Player[][] {
   for (let iter = 0; iter < 1200; iter++) {
     const shuffled = [...pool].sort(() => Math.random() - 0.5)
     const teams: Player[][] = Array.from({ length: numTeams }, () => [])
-    const sorted = [...shuffled].sort((a, b) => b.skill - a.skill)
+    const sorted = [...shuffled].sort((a, b) => (b.skill + b.fitness) - (a.skill + a.fitness))
     sorted.forEach((p, i) => teams[i % numTeams].push(p))
 
-    // Heavy penalty for conflict violations
     const conflictPenalty = hasConflict(teams, pool) ? 1000 : 0
     const score = scoreTeams(teams) + conflictPenalty
 
@@ -94,10 +99,12 @@ export function balanceTeams(pool: Player[], numTeams: number): Player[][] {
 
 function scoreTeams(teams: Player[][]): number {
   const skills = teams.map(t => t.reduce((s, p) => s + p.skill, 0) / t.length)
+  const fitnesses = teams.map(t => t.reduce((s, p) => s + (p.fitness || 3), 0) / t.length)
   const ages = teams.map(t => t.reduce((s, p) => s + p.age, 0) / t.length)
   const nats = teams.map(t => new Set(t.map(p => p.nationality)).size)
   const skillVar = Math.max(...skills) - Math.min(...skills)
+  const fitnessVar = Math.max(...fitnesses) - Math.min(...fitnesses)
   const ageVar = Math.max(...ages) - Math.min(...ages)
   const natVar = Math.max(...nats) - Math.min(...nats)
-  return skillVar * 10 + ageVar * 0.5 + natVar * 2
+  return skillVar * 10 + fitnessVar * 8 + ageVar * 0.5 + natVar * 2
 }
